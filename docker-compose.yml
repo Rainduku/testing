@@ -1,0 +1,61 @@
+version: '3'
+services:
+  # Node.js app
+  todo-app:
+    container_name: todo-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+    - .env
+    volumes:
+      - .:/app
+    networks:
+      - node-network 
+    depends_on:
+      - todo-db
+
+  # Nginx server
+  nginx:
+    image: nginx:1.25.3
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    networks:
+    - node-network  
+    depends_on:
+      - todo-app
+    
+
+  # PostgreSQL database
+  todo-db:
+    container_name: todo-db
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: todo_db
+    ports:
+      - "5432:5432"  # Forwarding host port 5432 to container port 5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data  
+    networks:
+      - node-network 
+
+  adminer:
+    container_name: adminer
+    image: adminer:4.8.1-standalone
+    ports:
+      - "3020:8080"  # Map host port 8020 to container port 8080
+    networks:
+      - node-network
+
+networks:
+  node-network:
+    driver: bridge  # Using the bridge network driver to connect the app and db services
+
+volumes:
+  postgres-data:
